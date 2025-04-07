@@ -24,79 +24,111 @@
 #     retorne maxTab[N][C] // valor máximo para uma mochila de capacidade C e
 #                          //que pode conter itens que vão do item 1 até o item N.
 
+
+import time
+
 def peso(item):
     return item[0]
 
 def valor(item):
     return item[1]
 
-def backpackPD(n, c, itens):
+def backpackPD(n, c, itens, stats=None):
+    if stats is not None:
+        stats['iterations'] = 0
+        stats['instructions'] = 0
+    
     maxTab = [[0 for j in range(c+1)] for i in range(n+1)]
+    if stats is not None:
+        stats['instructions'] += (n + 1) * (c + 1)  # Inicialização da matriz
     
     for i in range(1, n+1):
         for j in range(1, c+1):
+            if stats is not None:
+                stats['iterations'] += 1
+                stats['instructions'] += 2  # comparação + acesso ao peso
             if peso(itens[i-1]) <= j:
-                maxTab[i][j] = max(maxTab[i-1][j], valor(itens[i-1]) +
-                                   maxTab[i-1][j - peso(itens[i-1])])
+                if stats is not None:
+                    stats['instructions'] += 4  # max + 2 acessos + adição
+                maxTab[i][j] = max(maxTab[i-1][j], 
+                                 valor(itens[i-1]) + maxTab[i-1][j - peso(itens[i-1])])
             else:
+                if stats is not None:
+                    stats['instructions'] += 1  # atribuição
                 maxTab[i][j] = maxTab[i-1][j]
     return maxTab[n][c]
 
-def backpack_brute_force(num, cap, itens):
-    if num == 0 or cap == 0:
-        return 0
+def backpack_brute_force(num, cap, itens, stats=None):
+    if stats is not None:
+        stats['iterations'] = 0
+        stats['instructions'] = 0
     
-    if itens[num-1][0] > cap:
-        return backpack_brute_force(num-1, cap, itens)
+    def brute_force_recursive(n, c):
+        if stats is not None:
+            stats['iterations'] += 1
+            stats['instructions'] += 2  # if + return
+        
+        if n == 0 or c == 0:
+            return 0
+        
+        if stats is not None:
+            stats['instructions'] += 1  # comparação
+        if itens[n-1][0] > c:
+            return brute_force_recursive(n-1, c)
+        
+        if stats is not None:
+            stats['instructions'] += 4  # max + adição + 2 chamadas
+        return max(itens[n-1][1] + brute_force_recursive(n-1, c - itens[n-1][0]),
+                  brute_force_recursive(n-1, c))
     
-    else:
-        return max(itens[num-1][1] + backpack_brute_force(num-1, cap-itens[num-1][0], itens),
-                   backpack_brute_force(num-1, cap, itens))
+    return brute_force_recursive(num, cap)
 
-
-def backpack_brute_force_loops(num, cap, itens):
-    max_value = 0
-    for i in range(1<<num):
-        value = 0
-        weight = 0
-        for j in range(num):
-            if i & (1<<j):
-                value += itens[j][1]
-                weight += itens[j][0]
-        if weight <= cap and value > max_value:
-            max_value = value
-    return max_value
-
-
-def backpack_divide_conquer(num, cap, itens):
-    if num == 0 or cap == 0:
-        return 0
+def run_benchmark():
+    # Casos de teste
+    test_cases = [
+        {
+            'name': 'Aula (N=10, C=165)',
+            'items': list(zip([23, 31, 29, 44, 53, 38, 63, 85, 89, 82],
+                            [92, 57, 49, 68, 60, 43, 67, 84, 87, 72])),
+            'capacity': 165
+        },
+        {
+            'name': 'Pequeno (N=3, C=2)',
+            'items': list(zip([1, 2, 3], [3, 2, 1])),
+            'capacity': 2
+        },
+        {
+            'name': 'Similar (N=8, C=100)',
+            'items': list(zip([10, 20, 30, 25, 15, 35, 40, 50],
+                            [40, 50, 60, 45, 30, 55, 65, 70])),
+            'capacity': 100
+        }
+    ]
     
-    if itens[num-1][0] > cap:
-        return backpack_divide_conquer(num-1, cap, itens)
+    algorithms = [
+        ('Brute Force', backpack_brute_force),
+        ('Dynamic Prog', backpackPD)
+    ]
     
-    else:
-        take = itens[num-1][1] + backpack_divide_conquer(num-1, cap-itens[num-1][0], itens)
-        skip = backpack_divide_conquer(num-1, cap, itens)
-        return max(take, skip)
+    print("\nKnapsack Benchmark Results")
+    print("-" * 100)
+    print(f"{'Algorithm':<15} {'Test Case':<20} {'Result':>12} {'Iterations':>12} {'Instructions':>12} {'Time (s)':>12}")
+    print("-" * 100)
+    
+    for algo_name, algo_func in algorithms:
+        for test in test_cases:
+            n = len(test['items'])
+            c = test['capacity']
+            stats = {'iterations': 0, 'instructions': 0}
+            start_time = time.time()
+            try:
+                result = algo_func(n, c, test['items'], stats)
+                end_time = time.time()
+                exec_time = end_time - start_time
+                print(f"{algo_name:<15} {test['name']:<20} {result:>12} {stats['iterations']:>12} {stats['instructions']:>12} {exec_time:>12.6f}")
+            except RecursionError:
+                print(f"{algo_name:<15} {test['name']:<20} {'Error':>12} {'N/A':>12} {'N/A':>12} {'N/A':>12}")
+        print("-" * 100)
 
-
-def main():
-    pesos   = [23, 31, 29, 44, 53, 38, 63, 85, 89, 82]
-    valores = [92, 57, 49, 68, 60, 43, 67, 84, 87, 72]
-    items = list(zip(pesos, valores))
-    #  print(items)
-    #  a = backpackPD(len(items), 165, items)
-    #  b = backpack_brute_force(len(items), 165, items)
-    #  c = backpack_divide_conquer(len(items), 165, items)
-    #  print(a)
-    #  print(b)
-    #  print(c)
-
-    p2 = [1, 2, 3]
-    v2 = [3, 2, 1]
-    i2 = list(zip(p2, v2))
-    d = backpackPD(len(i2), 2, i2)
-    print(d)
-
-main()
+if __name__ == "__main__":
+    run_benchmark()
