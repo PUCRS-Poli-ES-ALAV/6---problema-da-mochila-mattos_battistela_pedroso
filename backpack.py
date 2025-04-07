@@ -1,30 +1,3 @@
-#  1. Resolva o problema da mochila conforme o enuciado em sala de aula.
-#
-#     1. Ache uma solução que testa todas as combinações possíveis e seleciona a melhor, aplicando divisão-e-conquista ou não;
-#     1. Contabilize o número de iterações;
-#     1. Implemente e teste sua solução, para o caso exposto em aula e outros de mesmo porte (;-)).
-#
-#  1. Resolva o problema da mochila utilizando o algoritmo com programação dinâmica visto em aula, teste e contabilize o número de iterações.
-#  Inteiro backPackPD(Inteiro N, Inteiro C, Tupla<Inteiro, Inteiro> itens)
-#     N = número de produtos;
-#     C = capacidade real da mochila
-#     itens[N +1];   // (O índice 0 guarda null), Tupla com peso e valor
-#     maxTab[N+1][C+1];
-#
-#     Inicialize com 0 toda a linha 0 e também a coluna 0;
-#     para i = 1 até N
-#        para j = 1 até C
-#           se item itens[i].peso <= j // se o item cabe na mochila atual
-#              maxTab[i][j] = Max(maxTab[i-1][j],
-#                                 itens[i].valor +
-#                                   maxTab[i-1][j – itens[i].peso]);
-#           senão
-#              maxTab[i][j] = maxTab[i-1][j];
-#
-#     retorne maxTab[N][C] // valor máximo para uma mochila de capacidade C e
-#                          //que pode conter itens que vão do item 1 até o item N.
-
-
 import time
 
 def peso(item):
@@ -84,24 +57,23 @@ def backpack_brute_force(num, cap, itens, stats=None):
     return brute_force_recursive(num, cap)
 
 def run_benchmark():
-    # Casos de teste
+    # Casos de teste fornecidos
     test_cases = [
         {
-            'name': 'Aula (N=10, C=165)',
+            'name': 'Caso 1 (N=10, C=165)',
             'items': list(zip([23, 31, 29, 44, 53, 38, 63, 85, 89, 82],
                             [92, 57, 49, 68, 60, 43, 67, 84, 87, 72])),
-            'capacity': 165
+            'capacity': 165,
+            'expected_blocks': [1, 2, 3, 4, 6],  # Índices 1-based: 1, 2, 3, 4, 6
+            'expected_value': 309  # 92 + 57 + 49 + 68 + 43
         },
         {
-            'name': 'Pequeno (N=3, C=2)',
-            'items': list(zip([1, 2, 3], [3, 2, 1])),
-            'capacity': 2
-        },
-        {
-            'name': 'Similar (N=8, C=100)',
-            'items': list(zip([10, 20, 30, 25, 15, 35, 40, 50],
-                            [40, 50, 60, 45, 30, 55, 65, 70])),
-            'capacity': 100
+            'name': 'Caso 2 (N=6, C=190)',
+            'items': list(zip([56, 59, 80, 64, 75, 17],
+                            [50, 50, 64, 46, 50, 5])),
+            'capacity': 190,
+            'expected_blocks': [1, 2, 5],  # Índices 1-based: 1, 2, 5
+            'expected_value': 150  # 50 + 50 + 50
         }
     ]
     
@@ -125,9 +97,12 @@ def run_benchmark():
                 result = algo_func(n, c, test['items'], stats)
                 end_time = time.time()
                 exec_time = end_time - start_time
-                print(f"{algo_name:<15} {test['name']:<20} {result:>12} {stats['iterations']:>12} {stats['instructions']:>12} {exec_time:>12.6f}")
+                
+                # Verifica se o resultado está correto
+                status = "OK" if result == test['expected_value'] else "FAIL"
+                print(f"{algo_name:<15} {test['name']:<20} {result:>12} {stats['iterations']:>12} {stats['instructions']:>12} {exec_time:>12.6f} {status}")
             except RecursionError:
-                print(f"{algo_name:<15} {test['name']:<20} {'Error':>12} {'N/A':>12} {'N/A':>12} {'N/A':>12}")
+                print(f"{algo_name:<15} {test['name']:<20} {'Error':>12} {'N/A':>12} {'N/A':>12} {'N/A':>12} FAIL")
         print("-" * 100)
 
 if __name__ == "__main__":
