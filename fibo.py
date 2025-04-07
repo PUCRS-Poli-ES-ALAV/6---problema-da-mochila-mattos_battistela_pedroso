@@ -68,8 +68,5 @@ def main():
     print(b)
     print(c)
 
-
-
-
 main()
 
